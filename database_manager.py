@@ -5,8 +5,12 @@ import sqlite3
 from logger import log
 
 
-def was_file_downloaded(file_dir, sqlite_db="downloads_db.db", table_name="downloads"):
+def was_file_downloaded(file_dir, sqlite_db="downloads_db.db", table_name="downloads", db_dir=None):
     try:
+        if db_dir: 
+            os.makedirs(db_dir, exist_ok=True)
+            sqlite_db = os.path.join(db_dir, sqlite_db)
+
         if not sqlite_db:
             log("error", "Invalid or missing downloads database file.")
             return False
@@ -37,11 +41,11 @@ def was_file_downloaded(file_dir, sqlite_db="downloads_db.db", table_name="downl
         return False
 
 
-def insert_file_path(file_dir, sqlite_db="downloads_db.db", table_name="downloads"):
+def insert_file_path(file_dir, sqlite_db="downloads_db.db", table_name="downloads", db_dir=None):
     try:
-        if not sqlite_db:
-            log("error", "Invalid or missing downloads database file.")
-            return False
+        if db_dir: 
+            os.makedirs(db_dir, exist_ok=True)
+            sqlite_db = os.path.join(db_dir, sqlite_db)
         
         file_dir = os.path.normpath(file_dir) 
         
@@ -65,9 +69,9 @@ def insert_file_path(file_dir, sqlite_db="downloads_db.db", table_name="download
         log("error", f"SQLite error: {e}")
         return False
     except Exception as func_err:
-        log("error", f"ensure_db_and_insert_file_path function error: {func_err}")
+        log("error", f"insert_file_path function error: {func_err}")
         return False
     except KeyboardInterrupt:
-        log("critical", "KeyboardInterrupt: Exited from function [ensure_db_and_insert_file_path]")
+        log("critical", "KeyboardInterrupt: Exited from function [insert_file_path]")
         time.sleep(10)
         return False
