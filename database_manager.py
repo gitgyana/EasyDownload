@@ -20,8 +20,11 @@ def was_file_downloaded(file_dir, sqlite_db="downloads_db.db", table_name="downl
         conn = sqlite3.connect(sqlite_db)
         cursor = conn.cursor()
         
+        base_dir = os.getcwd() 
+        relative_file_dir = os.path.relpath(file_dir, base_dir) 
+        
         query = f"SELECT 1 FROM {table_name} WHERE file_path = ?"
-        cursor.execute(query, (file_dir,))
+        cursor.execute(query, (relative_file_dir,)) 
         
         result = cursor.fetchone()
         
