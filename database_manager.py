@@ -1,6 +1,7 @@
 import os 
 import time
 import sqlite3
+from datetime import datetime
 
 from logger import log
 
@@ -44,7 +45,7 @@ def was_file_downloaded(file_dir, sqlite_db="downloads_db.db", table_name="downl
         return False
 
 
-def insert_file_path(file_dir, sqlite_db="downloads_db.db", table_name="downloads", db_dir=None):
+def insert_file_path(file_dir, size=None, sqlite_db="downloads_db.db", table_name="downloads", db_dir=None):
     try:
         if db_dir: 
             os.makedirs(db_dir, exist_ok=True)
@@ -58,9 +59,14 @@ def insert_file_path(file_dir, sqlite_db="downloads_db.db", table_name="download
         conn = sqlite3.connect(sqlite_db)
         cursor = conn.cursor()
         
-        cursor.execute(f"CREATE TABLE IF NOT EXISTS {table_name} (id INTEGER PRIMARY KEY, file_path TEXT UNIQUE)")
-        
-        cursor.execute(f"INSERT OR IGNORE INTO {table_name} (file_path) VALUES (?)", (file_dir,))
+        cursor.execute(f"CREATE TABLE IF NOT EXISTS {table_name} (id INTEGER PRIMARY KEY, process_id TEXT, size TEXT, file_path TEXT UNIQUE)")
+
+        process_id = datetime.now().strftime('%Y%m%d_%H%M%S')
+
+        if size is not None:
+            cursor.execute(f"INSERT OR IGNORE INTO {table_name} (process_id, size, file_path) VALUES (?, ?, ?)", (process_id, size, file_dir))
+        else:
+            cursor.execute(f"INSERT OR IGNORE INTO {table_name} (process_id, file_path) VALUES (?, ?)", (process_id, file_dir))
         
         conn.commit()
         conn.close()
