@@ -28,6 +28,9 @@ def __size_format__(size):
 
 
 def alldebrid(link=alldebrid_test_link, test=False, alldebrid_key=alldebrid_api_key):
+    global skip_url_list
+    global skip_debrid_list
+    
     if test:
         log("info", f"Alldebrid Key: [{alldebrid_key[:4] + ((len(alldebrid_key) - 4) * '.')}]: ")
 
