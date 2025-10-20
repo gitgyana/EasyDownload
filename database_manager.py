@@ -11,6 +11,8 @@ def was_file_downloaded(file_dir, sqlite_db="downloads_db.db", table_name="downl
             log("error", "Invalid or missing downloads database file.")
             return False
         
+        file_dir = os.path.normpath(file_dir)
+        
         conn = sqlite3.connect(sqlite_db)
         cursor = conn.cursor()
         
@@ -26,11 +28,11 @@ def was_file_downloaded(file_dir, sqlite_db="downloads_db.db", table_name="downl
     except sqlite3.Error as e:
         log("error", f"SQLite error: {e}")
         return False
-    except Exception as he:
-        log("error", f"was_file_downloaded function error: {he}")
+    except Exception as func_err:
+        log("error", f"was_file_downloaded function error: {func_err}")
         return False
     except KeyboardInterrupt:
-        log("warning", "KeyboardInterrupt: Exited from function [was_file_downloaded]")
+        log("critical", "KeyboardInterrupt: Exited from function [was_file_downloaded]")
         time.sleep(10)
         return False
 
