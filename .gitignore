@@ -6,3 +6,9 @@ __pycache__/
 .tests/
 credentials
 credentials/
+
+*.db
+*.sqlite
+*.sqlite3
+*.csv
+*.log
