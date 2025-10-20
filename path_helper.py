@@ -26,7 +26,7 @@ def get_valid_windows_path(file_path):
     except Exception as func_err:
         log("error", f"[ validate_windows_file_dir function error: {func_err} ]")
     except KeyboardInterrupt:
-        log("warning", "KeyboardInterrupt: Exited from function [validate_windows_file_dir]")
+        log("critical", "KeyboardInterrupt: Exited from function [validate_windows_file_dir]")
         time.sleep(10)
     
     return os.getcwd()
@@ -48,7 +48,7 @@ def build_download_path(base_dir, date=None, category=None, filename=None):
     except Exception as func_err:
         log("error", f"[ create_download_dir function error: {func_err} ]")
     except KeyboardInterrupt:
-        log("warning", "KeyboardInterrupt: Exited from function [create_download_dir]")
+        log("critical", "KeyboardInterrupt: Exited from function [create_download_dir]")
         time.sleep(10)
         
     return os.getcwd()
