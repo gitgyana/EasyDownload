@@ -63,11 +63,14 @@ def update(**kwargs):
     __save__(data)
 
 
-def get(*args):
+def get(*args, default=''):
     data = __load__()
     result = {}
     for key in args:
         if key in data:
+            result[key] = data[key]
+        else:
+            __create__(key, default)
             result[key] = data[key]
             
     return result
