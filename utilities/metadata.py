@@ -11,6 +11,8 @@ data = {}
 
 
 def __create__(key, value):
+    global data
+
     if key in data:
         return
 
@@ -64,6 +66,8 @@ def update(**kwargs):
 
 
 def get(*args, default=''):
+    global data
+
     data = __load__()
     result = {}
     for key in args:
@@ -71,8 +75,13 @@ def get(*args, default=''):
             result[key] = data[key]
         else:
             __create__(key, default)
+            __save__(data)
+            data = __load__()
             result[key] = data[key]
-            
+    
+    if len(args) == 1:
+        return result[args[0]]
+    
     return result
 
 
