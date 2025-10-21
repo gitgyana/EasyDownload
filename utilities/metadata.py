@@ -87,13 +87,12 @@ def get(*args, default=''):
     data = __load__()
     result = {}
     for key in args:
-        if key in data:
-            result[key] = data[key]
-        else:
+        if key not in data:
             __create__(key=key, value=default)
             __save__(data)
             data = __load__()
-            result[key] = data[key]
+            
+        result[key] = data[key]
     
     if len(args) == 1:
         return result[args[0]]
