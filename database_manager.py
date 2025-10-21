@@ -45,42 +45,48 @@ def was_file_downloaded(file_dir, sqlite_db="downloads_db.db", table_name="downl
         return False
 
 
-def insert_file_path(file_dir, size=None, sqlite_db="downloads_db.db", table_name="downloads", db_dir=None):
+def insert(columns=None, values=None, sqlite_db="downloads_db.db", table_name="downloads", db_dir=None):
     try:
         if db_dir: 
             os.makedirs(db_dir, exist_ok=True)
             sqlite_db = os.path.join(db_dir, sqlite_db)
         
-        file_dir = os.path.normpath(file_dir) 
-        
-        base_dir = os.getcwd() 
-        file_dir = os.path.relpath(file_dir, base_dir) 
+        if not columns:
+            log("error", "Columns must be provided")
+            return False
+
+        if not values:
+            log("error", "Values for the columns must be provided")
+            return False
+
+        column_definitions = ", ".join([f"{col} {dtype}" for col, dtype in columns.items()])
+        column_placeholders = ", ".join(["?" for _ in columns])
+        column_names = ", ".join(columns.keys())
+
+        if len(values) != len(columns):
+            log("error", "The number of values must match the number of columns")
+            return False
 
         conn = sqlite3.connect(sqlite_db)
         cursor = conn.cursor()
-        
-        cursor.execute(f"CREATE TABLE IF NOT EXISTS {table_name} (id INTEGER PRIMARY KEY, process_id TEXT, size TEXT, file_path TEXT UNIQUE)")
 
-        process_id = datetime.now().strftime('%Y%m%d_%H%M%S')
+        cursor.execute(f"CREATE TABLE IF NOT EXISTS {table_name} ({column_definitions})")
 
-        if size is not None:
-            cursor.execute(f"INSERT OR IGNORE INTO {table_name} (process_id, size, file_path) VALUES (?, ?, ?)", (process_id, size, file_dir))
-        else:
-            cursor.execute(f"INSERT OR IGNORE INTO {table_name} (process_id, file_path) VALUES (?, ?)", (process_id, file_dir))
-        
+        cursor.execute(f"INSERT OR IGNORE INTO {table_name} ({column_names}) VALUES ({column_placeholders})", tuple(values))
+
         conn.commit()
         conn.close()
         
-        log("info", f"File path inserted: {file_dir}")
+        log("info", f"Successful Insertion [DB: {sqlite_db}] [TABLE: {table_name}]")
         return True
     
     except sqlite3.Error as e:
         log("error", f"SQLite error: {e}")
         return False
     except Exception as func_err:
-        log("error", f"insert_file_path function error: {func_err}")
+        log("error", f"insert function error: {func_err}")
         return False
     except KeyboardInterrupt:
-        log("critical", "KeyboardInterrupt: Exited from function [insert_file_path]")
+        log("critical", "KeyboardInterrupt: Exited from function [insert]")
         time.sleep(10)
         return False
