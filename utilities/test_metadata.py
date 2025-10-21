@@ -5,6 +5,11 @@ print("Testing get() ")
 update(integer_key=10, string_key="Initial String")
 print("integer_key:", get('integer_key'))  # Expected output: 10
 print("string_key:", get('string_key'))    # Expected output: "Initial String"
+update(integer_key=20, float_key=1.0)
+update(integer_key=30, float_key=0.8)
+print("integer_key:", get('integer_key'))  # Expected output: 60
+print("float_key:", get('float_key'))      # Expected output: 1.8
+print("string_key:", get('string_key'))    # Expected output: "Initial String"
 
 # Test 2: Test `get()` with non-existing keys (should create them with default values)
 print("\nTesting get() with non-existing keys...")

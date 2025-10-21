@@ -73,6 +73,8 @@ def update(**kwargs):
             data[key].update(value)
         elif isinstance(data[key], tuple):
             raise ValueError(f"Unsupported type: {type(value)}")
+        elif isinstance(data[key], int) or isinstance(value, float):
+            data[key] += value
         else:
             data[key] = value
 
