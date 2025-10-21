@@ -1,6 +1,6 @@
 import os
 import time
-import datetime
+from datetime import datetime
 
 import socket
 import requests 
@@ -8,10 +8,10 @@ from tqdm import tqdm
 
 from logger import log
 from network_status import conn_status
-from path_helper import get_valid_windows_path
 from utilities.metadata import update
 from utilities.utils import size_format, format_timeperiod
-from database_manager import was_file_downloaded, insert_file_path 
+from database_manager import was_file_downloaded, insert
+from path_helper import get_valid_windows_path, normalize_path
 
 
 def download(url, output_dir=None, attempt=0, max_attempt=10, limit_attempt=True):
@@ -28,7 +28,7 @@ def download(url, output_dir=None, attempt=0, max_attempt=10, limit_attempt=True
         filename = ""
         
         if not output_dir or output_dir.endswith("Downloads"):
-            current_time = datetime.datetime.now().strftime("%Y.%m.%d_%H.%M.%S")
+            current_time = datetime.now().strftime("%Y.%m.%d_%H.%M.%S")
             output_dir = os.path.join(os.getcwd(), f"Download_{current_time}")
             
             filename = os.path.basename(url)
@@ -81,11 +81,36 @@ def download(url, output_dir=None, attempt=0, max_attempt=10, limit_attempt=True
             
             return False, f"Unknown Error while retriving download size: {str(e)}", "0 KB"
         
+        columns = {
+            "pid": "TEXT",
+            "directory": "TEXT",
+            "filename": "TEXT UNIQUE",
+            "size": "TEXT",
+            "links": "TEXT",
+            "source": "TEXT",
+            "log": "TEXT",
+            "status": "TEXT"
+        }
+        
+        update(columns=columns)
+        
         if os.path.exists(file_path) and size_format(os.path.getsize(file_path)) == file_size:
             log("info", f"File already exists: [ {file_size} > {filename} ]. Skipping download.")
-            insert_file_path(
-                file_dir=file_path, 
-                size=file_size,
+            
+            pid = datetime.now().strftime("%Y%m%d_%H%M%S")
+            directory = normalize_path(file_path)
+            filename = os.path.basename(directory)
+            size = file_size
+            links = "UNKNOWN"
+            source = "UNKNOWN"
+            plog = f"File already exists [{file_size}]"
+            status = "True"
+
+            values = (pid, directory, filename, size, links, source, plog, status)
+
+            insert(
+                columns=columns, 
+                values=values, 
                 sqlite_db="downloads_db.db", 
                 table_name="downloads", 
                 db_dir="ProcessedData"
@@ -148,9 +173,20 @@ def download(url, output_dir=None, attempt=0, max_attempt=10, limit_attempt=True
             update(absolute_total_downloaded_size=total_size)
             update(total_downloaded_size=total_size)
             
-            insert_file_path(
-                file_dir=file_path, 
-                size=file_size,
+            pid = datetime.now().strftime("%Y%m%d_%H%M%S")
+            directory = normalize_path(file_path)
+            filename = os.path.basename(directory)
+            size = file_size
+            links = "UNKNOWN"
+            source = "UNKNOWN"
+            status = "True"
+            plog = f"Download Successful"
+
+            values = [pid, directory, filename, size, links, source, plog, status]
+
+            insert(
+                columns=columns, 
+                values=values, 
                 sqlite_db="downloads_db.db", 
                 table_name="downloads", 
                 db_dir="ProcessedData"
@@ -158,7 +194,9 @@ def download(url, output_dir=None, attempt=0, max_attempt=10, limit_attempt=True
         
         download_duration = time.time() - download_start_period
         log("info", f"Download Successful [{format_timeperiod(download_duration)}]")
+
         return True, f"Download Successful [{format_timeperiod(download_duration)}]", file_size
+    
     except Exception as func_err:
         log("error", f"[ download (no idea) function error: {func_err} ]")
         if "Read timed out" in f"{str(func_err)}":
@@ -168,3 +206,4 @@ def download(url, output_dir=None, attempt=0, max_attempt=10, limit_attempt=True
     except KeyboardInterrupt:
         log("critical", "KeyboardInterrupt: Exited from function [download_file]")
         return False, "KeyboardInterrupt - Exited from function [download_file]", "0 KB"
+
