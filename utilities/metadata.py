@@ -10,24 +10,24 @@ os.makedirs('cache', exist_ok=True)
 data = {}
 
 
-def __create__(key, type='str'):
+def __create__(key, value):
     if key in data:
         return
 
-    if type == 'list':
+    if isinstance(value, list):
         value = []
-    elif type == 'int':
+    elif isinstance(value, int):
         value = 0
-    elif type == 'str':
+    elif isinstance(value, str):
         value = ''
-    elif type == 'dict':
+    elif isinstance(value, dict):
         value = {}
-    elif type == 'float':
+    elif isinstance(value, float):
         value = 0.0
-    elif type == 'bool':
+    elif isinstance(value, bool):
         value = False
     else:
-        raise ValueError(f"Unsupported type: {type}")
+        raise ValueError(f"Unsupported type: {type(value)}")
 
     data[key] = value
     
@@ -56,7 +56,7 @@ def update(**kwargs):
     data = __load__()
     for key, value in kwargs.items():
         if key not in data:
-            __create__(key, type='str')
+            __create__(key, value)
 
         data[key] = value
 
