@@ -8,35 +8,10 @@ from tqdm import tqdm
 
 from logger import log
 from network_status import conn_status
-from database_manager import was_file_downloaded, insert_file_path 
 from path_helper import get_valid_windows_path
-
-
-total_downloaded_size = 0
-absolute_total_downloaded_size = 0
-
-
-def __size_format__(size):
-    for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
-        if size < 1024:
-            return f"{size:.2f} {unit}"
-            
-        size /= 1024
-        
-    return f"{size:.2f} PB"
-
-
-def __format_timeperiod__(timeperiod):
-    for unit in ["seconds", "minutes", "hours"]:
-        if timeperiod < 60:
-            return f"{timeperiod:.2f} {unit}"
-        
-        if unit == "hours":
-            timeperiod /= 24
-        else:
-            timeperiod /= 60
-    
-    return f"{timeperiod} days"
+from utilities.metadata import update
+from utilities.utils import size_format, format_timeperiod
+from database_manager import was_file_downloaded, insert_file_path 
 
 
 def download(url, output_dir=None, attempt=0, max_attempt=10, limit_attempt=True):
@@ -88,10 +63,10 @@ def download(url, output_dir=None, attempt=0, max_attempt=10, limit_attempt=True
                 if os.path.exists(file_path) and (content_size != os.path.getsize(file_path)):
                     os.remove(file_path)
                     
-                return False, "Resume failed: File may already be fully downloaded.", __size_format__(downloaded_bytes)
+                return False, "Resume failed: File may already be fully downloaded.", size_format(downloaded_bytes)
                 
             total_size = int(response.headers.get('content-length', 0)) + downloaded_bytes
-            file_size = __size_format__(total_size)
+            file_size = size_format(total_size)
             block_size = 8192
         
         except requests.exceptions.Timeout:
@@ -106,7 +81,7 @@ def download(url, output_dir=None, attempt=0, max_attempt=10, limit_attempt=True
             
             return False, f"Unknown Error while retriving download size: {str(e)}", "0 KB"
         
-        if os.path.exists(file_path) and __size_format__(os.path.getsize(file_path)) == file_size:
+        if os.path.exists(file_path) and size_format(os.path.getsize(file_path)) == file_size:
             log("info", f"File already exists: [ {file_size} > {filename} ]. Skipping download.")
             insert_file_path(
                 file_dir=file_path, 
@@ -169,12 +144,9 @@ def download(url, output_dir=None, attempt=0, max_attempt=10, limit_attempt=True
             if ("KB" in file_size or " B" in file_size) and int(file_size.split(' ')[0].split('.')[0]) < 100:
                 log("error", "DOWNLOAD ERROR: Corrupt File")
                 return False, "DOWNLOAD ERROR: Corrupt File", file_size
-                
-            global total_downloaded_size
-            global absolute_total_downloaded_size
             
-            absolute_total_downloaded_size += total_size
-            total_downloaded_size += total_size
+            update(absolute_total_downloaded_size=total_size)
+            update(total_downloaded_size=total_size)
             
             insert_file_path(
                 file_dir=file_path, 
@@ -185,8 +157,8 @@ def download(url, output_dir=None, attempt=0, max_attempt=10, limit_attempt=True
             )
         
         download_duration = time.time() - download_start_period
-        log("info", f"Download Successful [{__format_timeperiod__(download_duration)}]")
-        return True, f"Download Successful [{__format_timeperiod__(download_duration)}]", file_size
+        log("info", f"Download Successful [{format_timeperiod(download_duration)}]")
+        return True, f"Download Successful [{format_timeperiod(download_duration)}]", file_size
     except Exception as func_err:
         log("error", f"[ download (no idea) function error: {func_err} ]")
         if "Read timed out" in f"{str(func_err)}":

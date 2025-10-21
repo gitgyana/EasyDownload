@@ -7,24 +7,14 @@ import requests
 
 from logger import log
 from network_status import conn_status
+from utilities.utils import size_format
+from utilities.metadata import get, update
 from credentials import streamtape_api_username_list, streamtape_api_password_list
 
 
 api_index = int(datetime.datetime.now().strftime('%d')) % 2
 streamtape_api_username = streamtape_api_username_list[api_index]
 streamtape_api_password = streamtape_api_password_list[api_index]
-
-skip_debrid_list = []
-
-
-def __size_format__(size):
-    for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
-        if size < 1024:
-            return f"{size:.2f} {unit}"
-            
-        size /= 1024
-        
-    return f"{size:.2f} PB"
 
 
 def get_streamtape_video_id(url):
@@ -57,9 +47,7 @@ def get_streamtape_video_id(url):
         
 
 def streamtape(link):
-    global skip_debrid_list
-        
-    if "streamtape" in skip_debrid_list:
+    if "streamtape" in get('skip_debrid_list'):
         return "Too high server load", "0 KB", False
     
     try:
@@ -81,7 +69,7 @@ def streamtape(link):
                     
                     if data['status'] == 500:
                         log("warning", f"Too high server load: {data}")
-                        skip_debrid_list.append("streamtape")
+                        update(skip_debrid_list="streamtape")
 
                         return f"Too high server load: {data}", "0 KB", False
                     
@@ -111,9 +99,9 @@ def streamtape(link):
                     return f"Streamtape DownloadLink Error: {data}", "0 KB", False
                 
                 task = "returning url and size"
-                log("info", f"{data['result']['url']} | {__size_format__(data['result']['size'])}")
+                log("info", f"{data['result']['url']} | {size_format(data['result']['size'])}")
 
-                return data["result"]["url"], __size_format__(data["result"]["size"]), True
+                return data["result"]["url"], size_format(data["result"]["size"]), True
             else:
                 log("error", f"Streamtape VideoID Error: {video_id}")
                 return f"Streamtape VideoID Error: {video_id}", "0 KB", False

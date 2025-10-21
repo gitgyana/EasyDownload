@@ -7,37 +7,22 @@ import tldextract
 
 from logger import log
 from network_status import conn_status
-
+from utilities.utils import size_format
+from utilities.metadata import get, update
 from credentials import alldebrid_api_key_list, alldebrid_test_link
 
 api_index = int(datetime.datetime.now().strftime('%d')) % 2
 alldebrid_api_key = alldebrid_api_key_list[api_index]
 
-skip_debrid_list = []
-skip_url_list = []
-
-
-def __size_format__(size):
-    for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
-        if size < 1024:
-            return f"{size:.2f} {unit}"
-            
-        size /= 1024
-        
-    return f"{size:.2f} PB"
-
 
 def alldebrid(link=alldebrid_test_link, test=False, alldebrid_key=alldebrid_api_key):
-    global skip_url_list
-    global skip_debrid_list
-    
     if test:
         log("info", f"Alldebrid Key: [{alldebrid_key[:4] + ((len(alldebrid_key) - 4) * '.')}]: ")
 
     try:
         domain = tldextract.extract(link).domain
-        if domain in skip_debrid_list:
-            log("info", f"Present in [skip debrid list] - '{domain}' in {skip_debrid_list}")
+        if domain in get('skip_debrid_list'):
+            log("info", f"Present in [skip debrid list] - '{domain}' in {get('skip_debrid_list')}")
 
             return f"LINK_HOST_LIMIT_REACHED: {domain}", "0 KB", False
             
@@ -55,10 +40,10 @@ def alldebrid(link=alldebrid_test_link, test=False, alldebrid_key=alldebrid_api_
                 try:
                     if data['status'] == "success":
                         if not test:
-                            log("info", f"{data['data']['link']} | {__size_format__(data['data']['filesize'])}")
+                            log("info", f"{data['data']['link']} | {size_format(data['data']['filesize'])}")
                             time.sleep(5)
                             
-                        return data['data']['link'], __size_format__(data['data']['filesize']), True
+                        return data['data']['link'], size_format(data['data']['filesize']), True
                     elif data['status'] == "error":
                         if data['error']['code'] == "AUTH_BLOCKED":
                             log("error", f"{data['error']['message']}")
@@ -79,11 +64,11 @@ def alldebrid(link=alldebrid_test_link, test=False, alldebrid_key=alldebrid_api_
 
                             return alldebrid(link=link, test=test, alldebrid_key=alldebrid_key)
                         elif data['error']['code'] == "LINK_HOST_LIMIT_REACHED":
-                            skip_debrid_list.append(domain)
+                            update(skip_debrid_list=domain)
                                 
                             return f"{data['error']['code']}: {data}", "0 KB", False
                         elif data['error']['code'] == "LINK_HOST_UNAVAILABLE":
-                            skip_url_list.append(link)
+                            update(skip_url_list=link)
                                 
                             return f"{data['error']['code']}: {data}", "0 KB", False
                         else:
