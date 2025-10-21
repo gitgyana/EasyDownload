@@ -10,13 +10,13 @@ os.makedirs('cache', exist_ok=True)
 data = {}
 
 
-def __create__(key, value):
+def __create__(key, value, set_default=True):
     global data
 
-    if key in data:
+    if key in data and set_default:
         return
 
-    if isinstance(value, list):
+    if isinstance(value, list) or isinstance(value, set):
         value = []
     elif isinstance(value, int):
         value = 0
@@ -55,12 +55,26 @@ def __save__(data):
 
 
 def update(**kwargs):
+    global data
     data = __load__()
+
     for key, value in kwargs.items():
         if key not in data:
-            __create__(key, value)
+            __create__(key=key, value=value)
+            __save__(data)
+            data = __load__()
 
-        data[key] = value
+        if isinstance(data[key], list):
+            if isinstance(value, list):
+                data[key].extend(value)
+            else:
+                data[key].append(value)
+        elif isinstance(data[key], dict):
+            data[key].update(value)
+        elif isinstance(data[key], tuple):
+            raise ValueError(f"Unsupported type: {type(value)}")
+        else:
+            data[key] = value
 
     __save__(data)
 
@@ -74,7 +88,7 @@ def get(*args, default=''):
         if key in data:
             result[key] = data[key]
         else:
-            __create__(key, default)
+            __create__(key=key, value=default)
             __save__(data)
             data = __load__()
             result[key] = data[key]
@@ -85,9 +99,36 @@ def get(*args, default=''):
     return result
 
 
+def reset(*args):
+    global data
+
+    data = __load__()
+    result = {}
+    for key in args:
+        if key in data:
+            __create__(key=key, value=data[key], set_default=False)
+        else:
+            __create__(key=key, value='')
+        
+        __save__(data)
+        data = __load__()
+        result[key] = data[key]
+    
+    if len(args) == 1:
+        return result[args[0]]
+    
+    return result
+
+
 def delete():
     if os.path.exists(DATA_FILE):
         os.remove(DATA_FILE)
+
+
+def clear():
+    global data
+    data = {}
+    __save__(data)
 
 
 __initialize__()
