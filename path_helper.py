@@ -52,3 +52,13 @@ def build_download_path(base_dir, date=None, category=None, filename=None):
         time.sleep(10)
         
     return os.getcwd()
+
+
+def normalize_path(file_path):
+    file_dir = os.path.normpath(file_path) 
+        
+    base_dir = os.getcwd() 
+    file_dir = os.path.relpath(file_dir, base_dir) 
+
+    return file_dir
+
